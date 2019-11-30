@@ -1,19 +1,10 @@
 import React, {useState} from 'react';
 import {AgGridReact} from 'ag-grid-react';
-import {GridApi, ColDef, ICellRendererParams} from 'ag-grid-community';
+import {ColDef} from 'ag-grid-community';
 
 import 'ag-grid-community/dist/styles/ag-grid.css';
 import 'ag-grid-community/dist/styles/ag-theme-balham.css';
 
-function DeleteRowButton(props: ICellRendererParams) {
-  const {api, node} = props;
-
-  function deleteRow() {
-    api.updateRowData({remove: [node.data]})
-  }
-
-  return <button onClick={deleteRow}>X</button>
-}
 
 const columnDefs: ColDef[] = [{
   headerName: "Make", field: "make", sortable: true, filter: true, editable: true, width: 100
@@ -21,73 +12,50 @@ const columnDefs: ColDef[] = [{
   headerName: "Model", field: "model", sortable: true, filter: true, editable: true, width: 100
 }, {
   headerName: "Price", field: "price", sortable: true, filter: true, editable: true, width: 100
-}, {
-  headerName: "Operation", field: "operation", cellRendererFramework: DeleteRowButton
 }]
 
-type Data = {
+type Row = {
   make: string,
   model: string,
   price: number
 };
 
-const rowData: Data[] = [{
-    make: "Toyota", model: "Celica", price: 35000
-  }, {
-    make: "Ford", model: "Mondeo", price: 32000
-  }, {
-    make: "Porsche", model: "Boxter", price: 72000
-  }]
-;
-
-function newData(): Data {
-  return {
-    make: "NewMake", model: "NewModel", price: 999
-  }
-}
+const defaultData = [{
+  make: "Toyota", model: "Celica", price: 35000
+}, {
+  make: "Ford", model: "Mondeo", price: 32000
+}, {
+  make: "Porsche", model: "Boxter", price: 72000
+}];
 
 export default function Hello() {
-  const [gridApi, setGridApi] = useState<GridApi>(null as any)
 
-  function addNewRow() {
-    gridApi.updateRowData({add: [newData()]});
-  }
+  const [rowData, setRowData] = useState<Row[] | undefined>(defaultData)
 
-  function addNewRowAndEdit() {
-    const result = gridApi.updateRowData({add: [newData()]});
-    const addedNode = result.add[0]
-    gridApi.setFocusedCell(addedNode.rowIndex, 'make');
-    gridApi.startEditingCell({
-      rowIndex: addedNode.rowIndex,
-      colKey: 'make',
-    });
-  }
-
-  function clearAll() {
-    gridApi.setRowData([]);
-  }
-
-  function removeSelected() {
-    const selectedRows = gridApi.getSelectedRows();
-    gridApi.updateRowData({remove: selectedRows});
+  function reload() {
+    setRowData(undefined);
+    setTimeout(() => {
+      setRowData(defaultData)
+    }, 1000);
   }
 
   return <div>
     <h1>Hello React-AgGrid</h1>
+
     <div className="ag-theme-balham">
       <div>
-        <button onClick={addNewRow}>Add</button>
-        <button onClick={addNewRowAndEdit}>Add & Edit</button>
-        <button onClick={clearAll}>Clear All</button>
-        <button onClick={removeSelected}>Remove Selected</button>
+        <button onClick={() => reload()}>Reload</button>
       </div>
       <AgGridReact
         columnDefs={columnDefs}
-        rowSelection='multiple'
-        rowData={rowData}
-        singleClickEdit={true}
-        onGridReady={params => setGridApi(params.api)}
-        stopEditingWhenGridLosesFocus={true}>
+        rowData={rowData as any}
+        onRowDataChanged={(event) => {
+          if (rowData === undefined) {
+            event.api.showLoadingOverlay();
+          } else {
+            event.api.closeToolPanel();
+          }
+        }}>
       </AgGridReact>
     </div>
   </div>
